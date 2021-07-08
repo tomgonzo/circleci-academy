@@ -27,7 +27,8 @@ jobs:
       - checkout
       - setup_remote_docker
       - docker/build:
-          image: $DOCKERID/${CIRCLECI_PROJECT_REPONAME}:${CIRCLE_SHA1}
+          image: $DOCKERID/${CIRCLECI_PROJECT_REPONAME}
+          tag: ${CIRCLE_SHA1}
   scan_and_push_image:
     executor: docker/docker
     steps:
