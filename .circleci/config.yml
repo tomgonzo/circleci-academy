@@ -6,14 +6,10 @@ orbs:
   node: circleci/node@4.5.1
   docker: circleci/docker@1.6.0
 
-defaults: &defaults
-  docker:
-    - image: cimg/base:stable
-  working_directory: ~/repo
-
 jobs:
   snyk_dependency_check:
-    <<: *defaults
+    docker:
+      - image: cimg/base:stable
     steps:
       - checkout
       - run:
@@ -27,10 +23,7 @@ jobs:
           severity-threshold: high
           token-variable: SNYK_TOKEN
           target-file: package.json
-      - persist_to_workspace:
-          root: .
-          paths:
-            - .
+
   build_image:
     executor: docker/docker
     steps:
@@ -41,8 +34,6 @@ jobs:
   scan_and_push_image:
     executor: docker/docker
     steps:
-      - attach_workspace:
-          at: ~/repo
       - setup_remote_docker
       - snyk/scan:
           docker-image-name: '$DOCKERID/${CIRCLECI_PROJECT_REPONAME}:${CIRCLE_SHA1}'
@@ -57,9 +48,9 @@ jobs:
           digest-path: /tmp/digest.txt
           image: $DOCKERID/${CIRCLECI_PROJECT_REPONAME}:${CIRCLE_SHA1}
 workflows:
-  build_and_deploy:
+  build_and_push:
     jobs:
-      - snyk_dependency_check:
+      - snyk_dependency_check
       - build_image:
           requires:
             - snyk_dependency_check
