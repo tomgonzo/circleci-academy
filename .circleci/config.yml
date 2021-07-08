@@ -36,7 +36,7 @@ jobs:
     steps:
       - setup_remote_docker
       - snyk/scan:
-          docker-image-name: '$DOCKERID/${CIRCLECI_PROJECT_REPONAME}:${CIRCLE_SHA1}'
+          docker-image-name: '$DOCKER_USERNAME/${CIRCLECI_PROJECT_REPONAME}:${CIRCLE_SHA1}'
           fail-on-issues: false
           monitor-on-build: true
           project: '${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BRANCH}-container'
