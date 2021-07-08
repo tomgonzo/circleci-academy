@@ -56,5 +56,5 @@ workflows:
             - snyk_dependency_check
       - scan_and_push_image:
           requires:
-            - build_and_scan_image
+            - build_image
 
