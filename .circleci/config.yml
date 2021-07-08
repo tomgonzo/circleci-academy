@@ -9,13 +9,10 @@ orbs:
 jobs:
   snyk_dependency_check:
     docker:
-      - image: cimg/base:stable
+      - image: cimg/node:16.4.1
     steps:
       - checkout
-      - run:
-          name: "install dependencies"
-          command: |
-            npm install
+      - run: npm install -q
       - snyk/scan:
           fail-on-issues: false
           monitor-on-build: true
