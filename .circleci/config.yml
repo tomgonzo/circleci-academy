@@ -1,0 +1,69 @@
+version: 2.1
+
+orbs:
+  kubernetes: circleci/kubernetes@0.11.0
+  snyk: snyk/snyk@0.1.0
+  node: circleci/node@4.5.1
+  docker: circleci/docker@1.6.0
+
+defaults: &defaults
+  docker:
+    - image: cimg/base:stable
+  working_directory: ~/repo
+
+jobs:
+  snyk_dependency_check:
+    <<: *defaults
+    steps:
+      - checkout
+      - run:
+          name: "install dependencies"
+          command: |
+            npm install
+      - snyk/scan:
+          fail-on-issues: false
+          monitor-on-build: true
+          project: '${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BRANCH}-app'
+          severity-threshold: high
+          token-variable: SNYK_TOKEN
+          target-file: package.json
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  build_image:
+    executor: docker/docker
+    steps:
+      - checkout
+      - setup_remote_docker
+      - docker/build:
+          image: $DOCKERID/${CIRCLECI_PROJECT_REPONAME}:${CIRCLE_SHA1}
+  scan_and_push_image:
+    executor: docker/docker
+    steps:
+      - attach_workspace:
+          at: ~/repo
+      - setup_remote_docker
+      - snyk/scan:
+          docker-image-name: '$DOCKERID/${CIRCLECI_PROJECT_REPONAME}:${CIRCLE_SHA1}'
+          fail-on-issues: false
+          monitor-on-build: true
+          project: '${CIRCLE_PROJECT_REPONAME}/${CIRCLE_BRANCH}-container'
+          severity-threshold: critical
+          target-file: Dockerfile
+          token-variable: SNYK_TOKEN
+      - docker/check
+      - docker/push:
+          digest-path: /tmp/digest.txt
+          image: $DOCKERID/${CIRCLECI_PROJECT_REPONAME}:${CIRCLE_SHA1}
+workflows:
+  build_and_deploy:
+    jobs:
+      - snyk_dependency_check:
+      - build_image:
+          requires:
+            - snyk_dependency_check
+      - scan_and_push_image:
+          requires:
+            - build_and_scan_image
+
